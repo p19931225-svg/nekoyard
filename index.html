@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ねこの庭</title>
+
+<style>
+/* =========================
+   ① 全體畫面設定
+========================= */
+body{
+  margin:0;
+  background:#f7f3ea;
+  font-family:sans-serif;
+  display:flex;
+  justify-content:center;
+}
+
+.status{
+  font-size:18px;
+  margin-bottom:10px;
+  text-align:center;
+}
+
+.day{
+  text-align:center;
+  font-size:14px;
+  margin-top:5px;
+}
+
+/* =========================
+   ② 手機畫面外框
+========================= */
+.phone{
+  width:390px;
+  min-height:100vh;
+  background:#fffdf8;
+  display:flex;
+  flex-direction:column;
+}
+
+/* =========================
+   ③ 上方資訊列
+========================= */
+.topbar{
+  padding:15px;
+  background:#fff4d9;
+  font-size:18px;
+  line-height:1.8;
+  border-bottom:2px solid #eee;
+}
+
+/* =========================
+   ④ 庭院畫面區
+========================= */
+.garden{
+  flex:1;
+  background:linear-gradient(#cdefff,#e9ffd9);
+  position:relative;
+  text-align:center;
+  padding-top:40px;
+}
+
+/* 小貓圖片 */
+.cat{
+  position:absolute;
+  
+  top:150px;   /* ⭐ 新增 */
+  left:150px;
+  width:80px;
+  z-index:5;
+ 
+  animation: catIdle 2.5s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+/* 地面 */
+.ground{
+  position:absolute;
+  bottom:0;
+  width:100%;
+  height:80px;
+  background:#98d67b;
+}
+
+/* =========================
+   ⑤ 按鈕區
+========================= */
+.buttons{
+  padding:15px;
+  background:#fff8ec;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+button{
+  font-size:20px;
+  padding:14px;
+  border:none;
+  border-radius:14px;
+  background:#ffd97d;
+}
+
+button:active{
+  transform:scale(0.96);
+}
+
+@keyframes catIdle{
+
+  0%{
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  25%{
+    transform: translateY(-4px) rotate(-2deg);
+  }
+
+  50%{
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  75%{
+    transform: translateY(-3px) rotate(2deg);
+  }
+
+  100%{
+    transform: translateY(0px) rotate(0deg);
+  }
+
+}
+
+
+/* =========================
+   ❤️ 愛心動畫
+========================= */
+
+#hearts{
+  position:absolute;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+}
+
+.heart{
+  position:absolute;
+  font-size:24px;
+  animation: floatUp 1s ease-out forwards;
+}
+
+@keyframes floatUp{
+  0%{
+    opacity:1;
+    transform:translateY(0px);
+  }
+  100%{
+    opacity:0;
+    transform:translateY(-80px);
+  }
+}
+
+
+/* =========================
+   🐾 貓咪點擊彈跳
+========================= */
+.bounce{
+  animation: bounce 0.3s, none;
+}
+
+@keyframes bounce{
+  0%{ transform:scale(1); }
+  50%{ transform:scale(1.15); }
+  100%{ transform:scale(1); }
+}
+
+/* =========================
+   🟦 貓砂區
+========================= */
+.litter{
+  position:absolute;
+  bottom:80px;
+  left:20px;
+  width:120px;
+  height:80px;
+  background:#66a9e0;
+  border:3px solid #295f88;
+  border-radius:10px;
+}
+
+
+.visitor{
+  animation: catIdle 2.5s ease-in-out infinite;
+}
+
+
+</style>
+</head>
+
+<body>
+
+<div class="phone">
+
+  <!-- =========================
+       ① 上方數值區
+  ========================== -->
+  <div class="topbar">
+    <p class="status">
+   おなか：<span id="hungry">80</span>
+   きげん：<span id="happy">80</span>
+   おかね：<span id="coins">0</span>
+    </p>
+
+     <div class="day">📅 <span id="day">1</span>日目</div>
+  </div>
+
+
+  <!-- =========================
+       ② 庭院畫面區
+  ========================== -->
+  <div class="garden">
+    <div id="hearts"></div>
+
+    <!-- 小貓圖片 -->
+    <img src="assets/cat1.png" class="cat" id="cat" onclick="petCat(event)">
+
+    <div class="litter"></div>
+
+    <!-- 地面 -->
+    <div class="ground"></div>
+
+  </div>
+
+
+  <!-- =========================
+       ③ 操作按鈕區
+  ========================== -->
+  <div class="buttons">
+
+    <!-- 餵食按鈕 -->
+    <button onclick="feedCat()">🍚</button>
+
+    <!-- 玩耍按鈕 -->
+    <button onclick="playCat()">🎾</button>
+
+    <!-- 清理大便 -->
+    <button onclick="cleanPoop()">🧹</button>
+
+    <!-- 搜集金幣 -->
+    <button onclick="collectCoin()">🪙</button>
+  </div>
+
+</div>
+
+
+<script>
+/* =========================
+   ① 基本數值
+========================= */
+let hungry = 80;
+let happy = 80;
+
+/* =========================
+   🐾 貓咪移動系統
+========================= */
+let catX = 150;
+let catY = 150;
+
+let targetX = 150;
+let targetY = 150;
+
+/* =========================
+   💩 大便資料
+========================= */
+let poops = [];
+
+/* =========================
+   ② HTML 抓元素
+========================= */
+const hungryText = document.getElementById("hungry");
+const happyText = document.getElementById("happy");
+const coinsText = document.getElementById("coins");
+
+/* =========================
+   ③ UI更新（＋圖片切換）
+========================= */
+function updateUI(){
+
+  hungryText.textContent = hungry;
+  happyText.textContent = happy;
+
+  const cat = document.getElementById("cat");
+
+  /* =========================
+     狀態判斷（圖片切換）
+  ========================= */
+
+  if(hungry < 20){
+    /* 很餓 */
+    cat.src = "assets/cat4.png";
+  }
+  else if(happy > 70){
+    /* 很開心 */
+    cat.src = "assets/cat2.png";
+  }
+  else if(happy < 60){
+    /* 不爽 */
+    cat.src = "assets/cat3.png";
+  }
+  else{
+    /* 普通 */
+    cat.src = "assets/cat1.png";
+  }
+
+}
+
+
+/* =========================
+   ④ 餵食功能
+========================= */
+function feedCat(){
+
+  hungry += 10;
+
+  if(hungry > 100){
+    hungry = 100;
+  }
+
+  updateUI();
+}
+
+
+/* =========================
+   ⑤ 玩耍功能
+========================= */
+function playCat(){
+
+  happy += 10;
+
+  if(happy > 100){
+    happy = 100;
+  }
+
+  updateUI();
+}
+
+/* =========================
+   🧹 清理按鈕（測試用）
+========================= */
+function cleanPoop(){
+
+  if(poops.length > 0){
+    poops.pop();
+  }
+
+  drawPoops(); // ⭐ 立即更新
+}
+
+
+/* =========================
+   隨機走動
+========================= */
+setInterval(()=>{
+
+  if(Math.random() < 0.3) return; // 偶爾不動
+
+  if(Math.random() < 0.3){ // ⭐ 30% 機率直接走去貓砂
+
+const litterRect = getLitterRect();
+
+    targetX = litterRect.x + Math.random() * (litterRect.w - 40);
+    targetY = litterRect.y + Math.random() * (litterRect.h - 40);
+  } else {
+    // 普通隨機走 (限制在庭院範圍內)
+    targetX = 20 + Math.random() * (390 - 100);
+    targetY = 100 + Math.random() * 200; 
+  }
+}, 4000);
+
+
+/* -------------------------
+   修正：檢查貓咪是否在貓砂盆內
+-------------------------- */
+function isCatInLitter() {
+  const l = getLitterRect();
+  // 判斷貓咪中心點是否在範圍內
+  return (
+    catX + 40 > l.x && 
+    catX < l.x + l.w && 
+    catY + 40 > l.y && 
+    catY < l.y + l.h
+  );
+}
+
+/* =========================
+   ⑥ 時間経過システム（自動で数値が減る）
+========================= */
+setInterval(()=>{
+  /* おなか減少 */
+  hungry -= 2;
+
+  /* きげん減少 */
+  happy -= 1;
+
+  /* 最低値制限（0以下にならない） */
+  if(hungry < 0) hungry = 0;
+  if(happy < 0) happy = 0;
+
+  /* 画面更新 */
+  updateUI();
+ 
+}, 3000); // 3秒ごとに実行
+
+let day = 1;
+const dayText = document.getElementById("day");
+
+setInterval(()=>{
+  day++;
+  dayText.textContent = day;
+}, 60000); // 每60秒＝1天（可以自己調整）
+
+
+/* =========================
+   🐾 貓咪互動（點擊）
+========================= */
+function petCat(e){
+
+  /* 增加心情 */
+  happy += 5;
+  if(happy > 100) happy = 100;
+
+  updateUI();
+
+  /* 產生愛心 */
+  createHeart(e);
+
+  /* 小彈跳效果 */
+  const cat = document.getElementById("cat");
+  cat.classList.add("bounce");
+
+  setTimeout(()=>{
+    cat.classList.remove("bounce");
+  }, 300);
+
+}
+
+/* =========================
+   ❤️ 產生愛心
+========================= */
+function createHeart(e){
+
+  const heart = document.createElement("div");
+  heart.className = "heart";
+  heart.innerHTML = '<img src="assets/heart.png" width="24">'
+
+
+    /* 取得點擊位置 */
+  const rect = document.querySelector(".garden").getBoundingClientRect();
+
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  heart.style.left = x + "px";
+  heart.style.top = y + "px";
+
+  document.getElementById("hearts").appendChild(heart);
+
+
+  /* 隨機位置（貓附近）
+  heart.style.left = (150 + Math.random()*80) + "px";
+  heart.style.top = (200 + Math.random()*50) + "px";
+
+  document.getElementById("hearts").appendChild(heart);
+  */
+
+  /* 1秒後刪除 */
+  setTimeout(()=>{
+    heart.remove();
+  }, 1000);
+
+}
+
+
+/* =========================
+   貓咪平滑移動
+========================= */
+function moveCat(){
+
+  /* ⭐ 是否已經到達目標（避免一直抖動） */
+  const dx = targetX - catX;
+  const dy = targetY - catY;
+
+  if(Math.abs(dx) >= 1 || Math.abs(dy) >= 1){
+
+    catX += dx * 0.01;
+    catY += dy * 0.01;
+
+  }
+
+  const cat = document.getElementById("cat");
+
+  cat.style.left = catX + "px";
+  cat.style.top = catY + "px";
+
+  requestAnimationFrame(moveCat); 
+
+}
+
+moveCat();
+
+
+/* =========================
+   💩 畫出大便
+========================= */
+function drawPoops(){
+
+  const garden = document.querySelector(".garden");
+
+  /* 先清空舊的 */
+  document.querySelectorAll(".poop").forEach(p=>p.remove());
+
+  /* 重新畫 */
+  poops.forEach((p)=>{ 
+
+    const el = document.createElement("div");
+    el.className = "poop";
+    el.innerHTML = '<img src="assets/poop.png" width="24">';
+
+    el.style.position = "absolute";
+    el.style.left = p.x + "px";
+    el.style.top = p.y + "px";
+
+    garden.appendChild(el);
+
+  });
+}
+
+
+/* =========================
+   💩 定時生成
+========================= */
+setInterval(()=>{
+
+if(poops.length >= 10) return; //  💩上限
+if(isCatInLitter()){
+
+const litterRect = getLitterRect();
+const x = litterRect.x + Math.random() * (litterRect.w - 20);
+const y = litterRect.y + Math.random() * (litterRect.h - 20);
+
+  poops.push({x, y});
+
+   drawPoops(); 
+}
+
+
+}, 5000); // 每5秒一個（之後可以改30秒）
+
+
+/* =========================
+   🟦 貓砂區資料
+========================= */
+function getLitterRect(){
+
+  const rect = document.querySelector(".litter").getBoundingClientRect();
+  const gardenRect = document.querySelector(".garden").getBoundingClientRect();
+
+  return {
+    x: rect.left - gardenRect.left,
+    y: rect.top - gardenRect.top,
+    w: rect.width,
+    h: rect.height
+  };
+}
+
+/* =========================
+   🐱 鄰居貓系統
+========================= */
+let visitor = null;      // 當前訪客
+let visitCount = 0;      // 來訪次數
+let coins = 0;           // 金幣
+
+function spawnVisitor(){
+
+  if(visitor) return; // 已經有貓就不生成
+
+  const x = 50 + Math.random() * 250;
+  const y = 100 + Math.random() * 150;
+
+  visitor = {
+    x,
+    y,
+    stayTime: 3000 // 停留3秒
+  };
+
+  drawVisitor();
+
+  // ⏳ 幾秒後離開
+  setTimeout(()=>{
+
+    leaveVisitor();
+
+  }, visitor.stayTime);
+
+}
+
+
+setInterval(()=>{
+
+  if(Math.random() < 0.7) return; // 機率出現
+
+  spawnVisitor();
+
+}, 8000);
+
+el.className = "visitor";
+
+
+function drawVisitor(){
+
+  const garden = document.querySelector(".garden");
+
+  // 清掉舊的
+  document.querySelectorAll(".visitor").forEach(v=>v.remove());
+
+  if(!visitor) return;
+
+  const el = document.createElement("img");
+  el.src = "assets/visitor1.png"; // 訪客貓圖片
+  el.className = "visitor";
+
+  el.style.position = "absolute";
+  el.style.left = visitor.x + "px";
+  el.style.top = visitor.y + "px";
+  el.style.width = "70px";
+  el.style.zIndex = "6";
+
+  garden.appendChild(el);
+}
+
+function leaveVisitor(){
+
+  if(!visitor) return;
+
+  // 🎁 掉金幣
+  spawnCoin(visitor.x, visitor.y);
+
+  visitor = null;
+  visitCount++;
+
+}
+
+function spawnCoin(x, y){
+
+  const garden = document.querySelector(".garden");
+
+  const coin = document.createElement("div");
+  coin.className = "coin";
+  coin.innerHTML = '<img src="assets/coin.png" width="24">';
+
+  coin.style.position = "absolute";
+  coin.style.left = x + "px";
+  coin.style.top = y + "px";
+
+  garden.appendChild(coin);
+
+}
+
+
+function collectCoin(){
+  const count = document.querySelectorAll(".coin").length; // 先算
+  coins += count;
+  coinsText.textContent = coins;
+  document.querySelectorAll(".coin").forEach(c => c.remove()); // 再刪
+}
+
+
+</script>
+
+</body>
+</html>
